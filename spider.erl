@@ -1,5 +1,5 @@
 -module(spider).
--export([start/0, fetch/1, parse_json/1, parse_json_from_url/1, find_key/2, find_key_r/2, director/2, process_image/2, new_queue/0]).
+-export([start/0]).
 
 -define(BASE_PATH, "http://suigintou.desudesudesu.org/").
 -define(WORKER_LIMIT, 6).
@@ -62,7 +62,7 @@ director(Running, Queue) when length(Queue) == 0 ->
 director(Running, Queue) when Running < ?WORKER_LIMIT ->
 	[Image | Tail] = Queue,
 	io:format("(~p/~p) Spawning worker..~n", [Running+1, ?WORKER_LIMIT]),
-	spawn(spider, process_image, [self(), Image]),
+	spawn(fun() -> process_image(self(), Image) end),
 	director(Running + 1, Tail);
 
 director(Running, Queue) ->
