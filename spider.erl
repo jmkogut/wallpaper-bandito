@@ -14,7 +14,7 @@ fetch(Url) ->
 			{error, Reason}
 	end.
 
-% Takes a JSON string and returns an erlang tuple
+% Takes a JSON string and returns an erlang list
 parse_json(JSON) ->
 	case json:decode_string(JSON) of
 		{ok, Result} ->
