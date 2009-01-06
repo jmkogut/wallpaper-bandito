@@ -48,7 +48,7 @@ find_key_r(Object, FindKey) ->
 % Master starts at the base page, spawns workers to download images.
 start() ->
 	application:start(inets),
-	director(0, new_queue()).
+	supervisor(0, new_queue()).
 
 new_queue() ->
 	io:format("~nDESU~n~nFILLING NEW QUEUE YAY~n~n~n"),
@@ -56,26 +56,26 @@ new_queue() ->
 	JSON.
 
 % Keeps at least ?WORKER_LIMIT amount of processes running at one time
-director(Running, Queue) when length(Queue) == 0 ->
-	director(Running, new_queue());
+supervisor(Running, Queue) when length(Queue) == 0 ->
+	supervisor(0, new_queue()); % Reset the queue
 
-director(Running, Queue) when Running < ?WORKER_LIMIT ->
+supervisor(Running, Queue) when Running < ?WORKER_LIMIT ->
 	[Image | Tail] = Queue,
 	io:format("(~p/~p) Spawning worker..~n", [Running+1, ?WORKER_LIMIT]),
-	spawn(fun() -> process_image(self(), Image) end),
-	director(Running + 1, Tail);
+	spawn(fun() -> worker(self(), Image) end),
+	supervisor(Running + 1, Tail);
 
-director(Running, Queue) ->
+supervisor(Running, Queue) ->
 	receive
 		done ->
 			io:format("(~p/~p) Worker completed..~n", [Running-1, ?WORKER_LIMIT]),
 			timer:sleep(round(?SLEEP_MS / ?WORKER_LIMIT)),
-			director(Running - 1, Queue);
+			supervisor(Running - 1, Queue);
 		_ ->
 			error
 	end.
 
-process_image(Director, Image) ->
+worker(Director, Image) ->
 	{_, ImageID} = find_key(Image, "img_id"),
 	io:format("Processing image ~p~n", [ImageID]),
 
